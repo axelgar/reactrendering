@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How React Renders — see exactly when components re-render</title>
+    <meta
+      name="description"
+      content="An interactive playground that shows, with real instrumented React, exactly when components re-render, what actually touches the DOM, and how memo, context, and the React Compiler change the picture."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#fbfaf8" />
+
+    <!-- Open Graph / social. Set og:url to the absolute domain once deployed. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How React Renders" />
+    <meta
+      property="og:description"
+      content="See exactly when React components re-render — and why. Real instrumented React: render flashes, commit rings, memo bailouts, context, and the compiler."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:site_name" content="How React Renders" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How React Renders" />
+    <meta
+      name="twitter:description"
+      content="See exactly when React components re-render — and why. Real instrumented React, visualized."
+    />
+    <meta name="twitter:image" content="/og.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

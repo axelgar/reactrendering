@@ -1,0 +1,38 @@
+{
+  "name": "how-react-renders",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "An interactive playground that shows — with real React — exactly when components re-render.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@babel/standalone": "^7.26.0",
+    "@codemirror/lang-javascript": "^6.2.0",
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.34.0",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "codemirror": "^6.0.1",
+    "d3-hierarchy": "^3.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.0",
+    "vite-plugin-node-polyfills": "^0.28.0"
+  }
+}

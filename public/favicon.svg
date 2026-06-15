@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#1c1a17" />
+  <!-- a tiny component tree: amber render node → a paper child and a green (committed) child -->
+  <path d="M16 14 L9.5 22 M16 14 L22.5 22" stroke="#6b6660" stroke-width="1.5" fill="none" />
+  <circle cx="16" cy="11" r="3.4" fill="#f59e0b" />
+  <circle cx="9.5" cy="23" r="2.6" fill="#fbfaf8" />
+  <circle cx="22.5" cy="23" r="2.6" fill="#10b981" />
+</svg>
