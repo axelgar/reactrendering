@@ -84,10 +84,13 @@ so you can see and poke the renders"). The honesty contract: code-you-see == cod
 we're transparent that a tracked copy is what executes — consistent with the compiler lesson,
 which already shows a transformed version of your code and explains it.
 
-Render/commit facts come from React's **official `<Profiler>` API** (public, supported) plus the
-injected tracking — **never private fiber internals** (the fragility the engine decision
-rejected). This survives React version bumps and the compiler. Forcing a single node to
-re-render (the seed feature) needs the injected per-component switch — pure observation can't
+Render/commit facts come from the injected tracking — **never private fiber internals** (the
+fragility the engine decision rejected). The commit boundary is a **microtask scheduled from the
+instrumentation** (any tracked render queues one flush that runs after the commit). We do *not* use
+`<Profiler onRender>`: it's a no-op in React's production build, which the iframe runs — that bug
+shipped to production once before this was fixed. This survives React version bumps and the
+compiler. Forcing a single node to re-render (the seed feature) needs the injected per-component
+switch — pure observation can't
 poke, only watch.
 
 ### Visual semantics (locked)
@@ -189,8 +192,9 @@ iframe-isolated, so this slots in cleanly).
   function component (reuse component-detection heuristics from react-refresh / react-compiler),
   wraps state setters and `useContext`, and adds the hidden force-update switch.
   **Function components + hooks only; no classes in v1.** The editor renders the *authored*
-  source; the transformed source is what runs (disclosed in the UI). Commit/render boundaries
-  come from the official `<Profiler>` API — **no `__REACT_DEVTOOLS_GLOBAL_HOOK__` / fiber
+  source; the transformed source is what runs (disclosed in the UI). The commit boundary is a
+  **microtask flush** scheduled from the tracking hook (NOT `<Profiler onRender>`, which no-ops in
+  React's production build that the iframe runs) — and **no `__REACT_DEVTOOLS_GLOBAL_HOOK__` / fiber
   walking**. The **tree shape** is reconstructed without fiber too: each instrumented component
   reads its parent's id from a React context and provides its own id to its subtree, so the real
   *mounted* parent-child tree (conditionals, lists and all) falls out of instrumentation alone.
@@ -200,9 +204,9 @@ iframe-isolated, so this slots in cleanly).
   can't instrument) still runs — it just appears as a muted, untracked node with a "not
   visualized yet (v1 = function components + hooks)" note, instead of erroring.
 - **Pinned React in the iframe**, bundled locally (no CDN), decoupled from the shell's React.
-  Target **React 19.x** runtime; **React Compiler 1.0 (stable)** for the compiler scenarios.
-  Use the **development/profiling build** of react-dom so `Profiler.onRender` fires and error
-  messages stay legible (the production build no-ops both).
+  Target **React 19.x** runtime; **React Compiler 1.0 (stable)** for the compiler scenarios. The
+  iframe runs React's normal production build in prod — fine, because the commit boundary is the
+  microtask flush, not `Profiler.onRender` (which that build no-ops).
 - **URL-shareable state**: `?scenario=memo&compiler=1&...` — every interesting configuration is
   a link. **Edited code** is shareable too, packed into the URL hash with LZ-compression
   (lz-string, like the TS/Babel playgrounds); if it's too large to encode, fall back to a
@@ -226,7 +230,7 @@ static deploy.
 |---|---|
 | Instrument transform mis-detects components in arbitrary code | Reuse react-refresh/compiler heuristics; fixture test suite |
 | Compiler-in-browser breakage across versions | Pin versions (official compiler playground proves the approach); graceful fallback |
-| Bailout detection false positives | Derive from mounted-instrument registry + commit boundaries via Profiler |
+| Bailout detection false positives | Derive from mounted-instrument registry + the microtask commit-boundary flush |
 | Tracking alters behavior | Tracking reads via refs + external log store; the **only** injected state is the per-node force-update updater, idle unless the user pokes a node |
 
 ## 8. Distribution
@@ -276,7 +280,7 @@ they're still cheap to fix.
 | First run | Default scenario + one coach-mark, user clicks first; editor collapsed | auto-play demo; welcome modal |
 | Tree display | One tree, layered relation edges | two synced trees; relations-on-demand |
 | Engine | Real React + record/replay | live-flashes only; hand-built simulator; devtools-inline |
-| Watching mechanism | Show authored code, run instrumented copy (disclosed) + official Profiler | peek private internals; static analysis; pure-peek (breaks force-update) |
+| Watching mechanism | Show authored code, run instrumented copy (disclosed); commit boundary = microtask flush | peek private internals; static analysis; pure-peek (breaks force-update); `<Profiler>` (no-ops in prod build) |
 | Compare | In-place toggles + synced Compare split | toggle-only; always side-by-side |
 | Scenarios v1 | Core spine + identity toolbox + context pack (8) | structure extras (deferred) |
 | Demo app | One realistic app (to-do list) reused across all scenarios | abstract labeled boxes; bespoke app per scenario |

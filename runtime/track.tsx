@@ -4,7 +4,6 @@ import {
   createContext,
   Fragment,
   isValidElement,
-  Profiler,
   useCallback,
   useContext,
   useEffect,
@@ -312,6 +311,20 @@ function flushCommit(durationMs: number) {
   contextChanged.clear()
 }
 
+// Commit boundary. We can't use <Profiler onRender> because it's a no-op in
+// React's production build (and the iframe runs the production build). Instead,
+// any tracked render schedules a single microtask that runs *after* the commit
+// (DOM mutated, MutationObserver records ready), then flushes once.
+let flushScheduled = false
+function scheduleFlush() {
+  if (flushScheduled) return
+  flushScheduled = true
+  queueMicrotask(() => {
+    flushScheduled = false
+    flushCommit(0)
+  })
+}
+
 // ── Public instrumentation API ───────────────────────────────────────────────
 
 /** Wrap a component so every render is observed and the node is poke-able. */
@@ -347,6 +360,7 @@ export function track<P extends object>(name: string, Comp: ComponentType<P>): F
       depth,
       order: renderOrder++,
     })
+    scheduleFlush()
 
     useEffect(() => {
       forceUpdaters.set(id, forceTick)
@@ -420,13 +434,12 @@ export function useTrackedContext<T>(ctx: Context<T>): T {
   return value
 }
 
-/** Root wrapper: the commit boundary + root contexts. */
+/** Root wrapper: the root contexts. (The commit boundary is the microtask flush
+ *  scheduled from track(), so this works in React's production build.) */
 export function Runtime({ children }: { children: ReactNode }) {
   return (
-    <Profiler id="root" onRender={(_id, _phase, actualDuration) => flushCommit(actualDuration)}>
-      <ParentCtx.Provider value={null}>
-        <DepthCtx.Provider value={0}>{children}</DepthCtx.Provider>
-      </ParentCtx.Provider>
-    </Profiler>
+    <ParentCtx.Provider value={null}>
+      <DepthCtx.Provider value={0}>{children}</DepthCtx.Provider>
+    </ParentCtx.Provider>
   )
 }
