@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import * as babel from '@babel/core'
 import reactCompiler from 'babel-plugin-react-compiler'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // Pre-compile a scenario with the React Compiler at build time — in Node, where
 // the compiler's dependency tree (@babel/core → debug → util, require.resolve)
 // works, unlike the browser worker. Importing a scenario with `?reactcompiler`
@@ -30,7 +32,7 @@ function rrReactCompiler(): Plugin {
 // Two entry points (index.html shell, runtime.html iframe) keep the iframe's
 // React instance decoupled from the shell's.
 export default defineConfig({
-  plugins: [rrReactCompiler(), react(), tailwindcss()],
+  plugins: [rrReactCompiler(), react(), tailwindcss(), cloudflare()],
   build: {
     rollupOptions: {
       input: {

@@ -4,6 +4,7 @@ dist-ssr
 *.local
 .DS_Store
 .vite
+*.tsbuildinfo
 
 # Editor
 .vscode/*
@@ -14,3 +15,10 @@ dist-ssr
 .playwright-mcp/
 tracer-*.png
 ui-*.png
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
