@@ -76,7 +76,7 @@ export function WhyPanel() {
             </div>
 
             {selectedNode && (
-              <div className="why-selected">
+              <div className="why-selected" key={selectedNode.id}>
                 <div className="why-selected-head">
                   <span className="sel-name">{selectedNode.name}</span>
                   <button className="link" onClick={() => select(null)}>

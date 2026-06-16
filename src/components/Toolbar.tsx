@@ -17,6 +17,7 @@ export function Toolbar() {
   const toggleCompare = useStore((s) => s.toggleCompare)
   const layers = useStore((s) => s.layers)
   const toggleLayer = useStore((s) => s.toggleLayer)
+  const replayTick = useStore((s) => s.replayTick)
 
   const scenario = scenarioById(scenarioId)
   const canCompare = scenarioId === 'cascade'
@@ -101,7 +102,11 @@ export function Toolbar() {
           </button>
         </div>
         <button className="tb-btn" onClick={replay} disabled={!hasLatest}>
-          ↻ replay
+          {/* key remount replays the one-shot spin each time replayTick advances */}
+          <span className={replayTick > 0 ? 'rr-replay rr-spin' : 'rr-replay'} key={replayTick} aria-hidden="true">
+            ↻
+          </span>{' '}
+          replay
         </button>
         <button className="tb-btn" onClick={reset}>
           reset

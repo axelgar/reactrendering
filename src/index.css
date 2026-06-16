@@ -17,6 +17,9 @@
   --radius: 12px;
   --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 140ms;
 }
 
 html,
@@ -39,6 +42,12 @@ button {
   appearance: none;
   font-family: inherit;
   color: inherit;
+  transition:
+    background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform 80ms var(--ease);
 }
 
 /* Keyboard focus — visible for everyone who tabs, invisible to mouse users. */
@@ -48,6 +57,13 @@ a:focus-visible {
   outline: 2px solid var(--props);
   outline-offset: 2px;
   border-radius: 5px;
+}
+
+/* A subtle press: every button dips slightly when activated (motion-safe only). */
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):active {
+    transform: translateY(1px);
+  }
 }
 
 .node {
@@ -101,6 +117,7 @@ a:focus-visible {
   height: 8px;
   border-radius: 50%;
   background: var(--faint);
+  transition: background-color 300ms var(--ease);
 }
 
 .status-ready .dot {
@@ -109,6 +126,22 @@ a:focus-visible {
 
 .status-error .dot {
   background: #ef4444;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-connecting .dot {
+    animation: rr-breathe 1.5s ease-in-out infinite;
+  }
+
+  @keyframes rr-breathe {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 }
 
 /* ── Toolbar ──────────────────────────────────────────────────── */
@@ -148,6 +181,17 @@ a:focus-visible {
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.tb-select:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.tb-select:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .tb-soon {
@@ -170,11 +214,21 @@ a:focus-visible {
   background: var(--bg);
   color: var(--muted);
   cursor: pointer;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.segmented button:not(.on):hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, var(--bg));
 }
 
 .segmented button.on {
   background: var(--ink);
   color: var(--bg);
+}
+
+.segmented button.on:hover {
+  background: color-mix(in srgb, var(--ink) 88%, white);
 }
 
 .tb-btn {
@@ -187,6 +241,12 @@ a:focus-visible {
   background: var(--bg);
   color: var(--ink);
   cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.tb-btn:not(:disabled):not(.on):hover {
+  border-color: var(--muted);
+  background: var(--panel);
 }
 
 .tb-btn:disabled {
@@ -236,10 +296,11 @@ button.layer-chip:hover {
 
 /* ── Panes ────────────────────────────────────────────────────── */
 .panes {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 330px) minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: var(--col-app, 300px) minmax(0, 1fr) var(--col-why, 340px);
   gap: 12px;
 }
 
@@ -327,7 +388,7 @@ button.layer-chip:hover {
   fill: var(--panel);
   stroke: var(--line);
   stroke-width: 1.5;
-  transition: stroke 120ms ease;
+  transition: stroke 160ms var(--ease), stroke-width 160ms var(--ease), fill 220ms var(--ease);
 }
 
 .node:hover .box {
@@ -538,6 +599,11 @@ button.layer-chip:hover {
   color: var(--faint);
   font-size: 12px;
   cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.link:hover {
+  color: var(--ink);
 }
 
 .sel-reason {
@@ -576,6 +642,12 @@ button.layer-chip:hover {
   background: var(--render-tint);
   color: #92611a;
   cursor: pointer;
+  transition: background-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.force-btn:hover {
+  background: color-mix(in srgb, var(--render) 20%, white);
+  box-shadow: 0 1px 8px color-mix(in srgb, var(--render) 26%, transparent);
 }
 
 .why-list {
@@ -596,6 +668,7 @@ button.layer-chip:hover {
   border-radius: 6px;
   cursor: pointer;
   border-bottom: 1px solid var(--line);
+  transition: background-color 120ms var(--ease);
 }
 
 .why-row:last-child {
@@ -667,8 +740,13 @@ button.layer-chip:hover {
   cursor: pointer;
 }
 
+.coach button:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 /* ── Editor drawer ────────────────────────────────────────────── */
 .editor-drawer {
+  position: relative;
   height: 40vh;
   min-height: 0;
   display: flex;
@@ -676,13 +754,17 @@ button.layer-chip:hover {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
+  /* visible (not hidden) so the top resize handle can sit in the gap above the
+     drawer; the editor content clips its own rounded bottom corners instead. */
+  overflow: visible;
 }
 
 .editor-host {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
 }
 
 .ed-hint {
@@ -696,6 +778,11 @@ button.layer-chip:hover {
   background: var(--ink);
   color: var(--bg);
   border-color: var(--ink);
+}
+
+.tb-btn.on:hover {
+  background: color-mix(in srgb, var(--ink) 88%, white);
+  border-color: color-mix(in srgb, var(--ink) 88%, white);
 }
 
 /* ── Compile-error banner ─────────────────────────────────────── */
@@ -808,6 +895,17 @@ button.layer-chip:hover {
   background: var(--bg);
   color: var(--muted);
   cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+
+.memo-toggle:not(.on):hover {
+  border-color: var(--muted);
+  color: var(--ink);
+}
+
+.memo-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .memo-toggle .dot-toggle {
@@ -899,4 +997,141 @@ button.layer-chip:hover {
 .compare-tree {
   flex: 1;
   min-height: 0;
+}
+
+/* ── Resize handles ───────────────────────────────────────────── */
+/* Handles live in the 12px gaps between panels, so they never sit over pane
+   content. A 2px guide-line surfaces on hover/focus/drag; otherwise invisible. */
+.col-resizer,
+.row-resizer {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.col-resizer {
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  transform: translateX(-50%);
+  cursor: col-resize;
+}
+
+.row-resizer {
+  left: 0;
+  right: 0;
+  /* sit in the 12px gap above the drawer, centered on the seam between the
+     drawer and the panels above (not inside the tab bar). */
+  top: -12px;
+  height: 12px;
+  cursor: row-resize;
+}
+
+.col-resizer::before {
+  content: '';
+  width: 2px;
+  height: 100%;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color var(--dur) var(--ease);
+}
+
+.row-resizer::before {
+  content: '';
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color var(--dur) var(--ease);
+}
+
+.col-resizer:hover::before,
+.row-resizer:hover::before {
+  background: var(--muted);
+}
+
+.col-resizer.active::before,
+.row-resizer.active::before {
+  background: var(--ink);
+}
+
+.col-resizer:focus-visible,
+.row-resizer:focus-visible {
+  outline: none;
+}
+
+.col-resizer:focus-visible::before,
+.row-resizer:focus-visible::before {
+  background: var(--props);
+}
+
+/* During a drag: keep iframes from swallowing the pointer, and kill text selection. */
+body.rr-resizing {
+  user-select: none;
+}
+
+body.rr-resizing iframe {
+  pointer-events: none;
+}
+
+/* ── Entrances & motion polish ────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .editor-drawer {
+    animation: rr-rise 220ms var(--ease) both;
+  }
+
+  .why-selected {
+    animation: rr-rise 200ms var(--ease) both;
+  }
+
+  .compile-error {
+    animation: rr-rise 200ms var(--ease) both;
+  }
+
+  .coach {
+    animation: rr-coach-in 300ms var(--ease) both;
+  }
+
+  .rr-spin {
+    animation: rr-spin-once 520ms var(--ease);
+  }
+
+  @keyframes rr-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes rr-coach-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes rr-spin-once {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/* The replay glyph spins once per replay; layout stays put with or without motion. */
+.rr-replay {
+  display: inline-block;
 }
