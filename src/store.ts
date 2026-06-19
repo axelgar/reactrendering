@@ -1,29 +1,13 @@
 import { create } from 'zustand'
-import {
-  SHELL_SOURCE,
-  type CommitFrame,
-  type ContextLink,
-  type NodeId,
-  type ShellMessage,
-  type TreeNode,
-} from '../shared/protocol'
+import type { NodeId } from '../shared/protocol'
 import { DEFAULT_SCENARIO, scenarioById } from './scenarios'
 
 export type Speed = 'instant' | 'slow'
-export type Status = 'connecting' | 'ready' | 'error'
-export interface RunError {
-  phase: 'compile' | 'runtime'
-  message: string
-}
 
+// The global store holds VIEW + EDIT intent only. Per-runtime render-log data
+// (tree, commits, errors, ready) lives in a RuntimeSession's SessionState —
+// see src/runtime-session. The store never touches the wire.
 interface RRState {
-  status: Status
-  iframeReady: boolean
-  error: RunError | null
-  tree: TreeNode[]
-  contextLinks: ContextLink[]
-  latest: CommitFrame | null
-  history: CommitFrame[]
   selectedId: NodeId | null
   speed: Speed
   layers: { props: boolean; context: boolean }
@@ -36,31 +20,23 @@ interface RRState {
   editorOpen: boolean
   compareOn: boolean
   introDismissed: boolean
-  post: ((msg: ShellMessage) => void) | null
 
-  // wiring
-  setPost: (fn: (msg: ShellMessage) => void) => void
-  onReady: () => void
-  onRuntimeError: (message: string) => void
-  onTree: (nodes: TreeNode[], contextLinks: ContextLink[]) => void
-  onCommit: (frame: CommitFrame) => void
-
-  // editor / compile
   setSource: (source: string) => void
   setScenario: (id: string) => void
   setVariant: (variantId: string | null) => void
-  setCompileError: (message: string | null) => void
   toggleEditor: () => void
   toggleCompare: () => void
   dismissIntro: () => void
 
-  // user actions
   select: (id: NodeId | null) => void
-  forceUpdate: (id: NodeId) => void
   setSpeed: (s: Speed) => void
   toggleLayer: (layer: 'props' | 'context') => void
   replay: () => void
-  reset: () => void
+
+  // set by the single-mode bridge when the active session reports interaction
+  markInteracted: () => void
+  // view-state half of a reset (the session clears its own render log)
+  resetView: () => void
 }
 
 const readIntroDismissed = () => {
@@ -71,14 +47,7 @@ const readIntroDismissed = () => {
   }
 }
 
-export const useStore = create<RRState>((set, get) => ({
-  status: 'connecting',
-  iframeReady: false,
-  error: null,
-  tree: [],
-  contextLinks: [],
-  latest: null,
-  history: [],
+export const useStore = create<RRState>((set) => ({
   selectedId: null,
   speed: 'slow',
   layers: { props: false, context: false },
@@ -91,21 +60,6 @@ export const useStore = create<RRState>((set, get) => ({
   editorOpen: false,
   compareOn: false,
   introDismissed: readIntroDismissed(),
-  post: null,
-
-  setPost: (fn) => set({ post: fn }),
-  onReady: () => set({ iframeReady: true, status: 'ready' }),
-  onRuntimeError: (message) => set({ status: 'error', error: { phase: 'runtime', message } }),
-  onTree: (nodes, contextLinks) => set({ tree: nodes, contextLinks }),
-  onCommit: (frame) =>
-    set((s) => ({
-      latest: frame,
-      history: [...s.history, frame].slice(-50),
-      status: 'ready',
-      // A fresh commit means the current code runs — clear any prior error.
-      error: s.error?.phase === 'runtime' ? null : s.error,
-      hasInteracted: s.hasInteracted || frame.trigger.type !== 'mount',
-    })),
 
   setSource: (source) => set({ source }),
   setScenario: (id) =>
@@ -116,12 +70,8 @@ export const useStore = create<RRState>((set, get) => ({
         scenarioId: id,
         variantId: null,
         source: sc.source,
-        sourceEpoch: s.sourceEpoch + 1, // signals the editor to load this source
+        sourceEpoch: s.sourceEpoch + 1, // signals the editor + session to load this source
         selectedId: null,
-        tree: [],
-        contextLinks: [],
-        latest: null,
-        history: [],
       }
     }),
   setVariant: (variantId) =>
@@ -134,10 +84,6 @@ export const useStore = create<RRState>((set, get) => ({
         source: src,
         sourceEpoch: s.sourceEpoch + 1,
         selectedId: null,
-        tree: [],
-        contextLinks: [],
-        latest: null,
-        history: [],
       }
     }),
   toggleEditor: () => set((s) => ({ editorOpen: !s.editorOpen })),
@@ -150,24 +96,14 @@ export const useStore = create<RRState>((set, get) => ({
     }
     set({ introDismissed: true })
   },
-  setCompileError: (message) =>
-    set((s) => {
-      if (message) return { status: 'error', error: { phase: 'compile', message } }
-      // clearing a compile error
-      return { error: s.error?.phase === 'compile' ? null : s.error, status: s.iframeReady ? 'ready' : s.status }
-    }),
 
   select: (id) => set({ selectedId: id }),
-  forceUpdate: (id) => {
-    get().post?.({ source: SHELL_SOURCE, kind: 'forceUpdate', id })
-  },
   setSpeed: (s) => set({ speed: s }),
   toggleLayer: (layer) => set((s) => ({ layers: { ...s.layers, [layer]: !s.layers[layer] } })),
   replay: () => set((s) => ({ replayTick: s.replayTick + 1 })),
-  reset: () => {
-    get().post?.({ source: SHELL_SOURCE, kind: 'reset' })
-    set({ tree: [], contextLinks: [], latest: null, history: [], selectedId: null, hasInteracted: false })
-  },
+
+  markInteracted: () => set((s) => (s.hasInteracted ? s : { hasInteracted: true })),
+  resetView: () => set({ selectedId: null, hasInteracted: false }),
 }))
 
 // Dev-only handle for debugging / automated verification.

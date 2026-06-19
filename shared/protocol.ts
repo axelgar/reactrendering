@@ -69,6 +69,13 @@ export type ShellMessage =
 export const RUNTIME_SOURCE = 'rr-runtime'
 export const SHELL_SOURCE = 'rr-shell'
 
+/** Construct shell→runtime messages. The single place that frames `source`. */
+export const shellMsg = {
+  run: (code: string): ShellMessage => ({ source: SHELL_SOURCE, kind: 'run', code }),
+  force: (id: NodeId): ShellMessage => ({ source: SHELL_SOURCE, kind: 'forceUpdate', id }),
+  reset: (): ShellMessage => ({ source: SHELL_SOURCE, kind: 'reset' }),
+}
+
 export function isRuntimeMessage(data: unknown): data is RuntimeMessage {
   return !!data && typeof data === 'object' && (data as { source?: string }).source === RUNTIME_SOURCE
 }

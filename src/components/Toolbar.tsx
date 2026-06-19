@@ -1,12 +1,13 @@
 import { SCENARIOS, scenarioById } from '../scenarios'
 import { useStore } from '../store'
+import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 
 export function Toolbar() {
   const speed = useStore((s) => s.speed)
   const setSpeed = useStore((s) => s.setSpeed)
   const replay = useStore((s) => s.replay)
-  const reset = useStore((s) => s.reset)
-  const hasLatest = useStore((s) => s.latest !== null)
+  const { reset } = useRuntimeActions()
+  const hasLatest = useRuntimeSession().latest !== null
   const editorOpen = useStore((s) => s.editorOpen)
   const toggleEditor = useStore((s) => s.toggleEditor)
   const scenarioId = useStore((s) => s.scenarioId)

@@ -1,19 +1,19 @@
 import { TreeSvg } from './TreeSvg'
 import { useStore } from '../store'
+import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 
-// Store-connected tree (single-instance mode). The presentational SVG lives in
-// TreeSvg so compare mode can render two of them with independent data.
+// Store-connected tree (single-instance mode). Render-log facts come from the
+// active RuntimeSession; view state (selection, speed, layers, replay) from the
+// store. The presentational TreeSvg is unchanged — Compare Mode renders two of it
+// bound to two sessions.
 export function TreeView() {
-  const tree = useStore((s) => s.tree)
-  const contextLinks = useStore((s) => s.contextLinks)
-  const latest = useStore((s) => s.latest)
-  const history = useStore((s) => s.history)
+  const { tree, contextLinks, latest, history } = useRuntimeSession()
   const selectedId = useStore((s) => s.selectedId)
   const speed = useStore((s) => s.speed)
   const layers = useStore((s) => s.layers)
   const replayTick = useStore((s) => s.replayTick)
   const select = useStore((s) => s.select)
-  const forceUpdate = useStore((s) => s.forceUpdate)
+  const { forceNode } = useRuntimeActions()
 
   return (
     <TreeSvg
@@ -26,7 +26,7 @@ export function TreeView() {
       layers={layers}
       replayTick={replayTick}
       onSelect={select}
-      onForce={forceUpdate}
+      onForce={forceNode}
     />
   )
 }

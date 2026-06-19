@@ -1,5 +1,5 @@
-import { useRef, useState, type CSSProperties } from 'react'
-import { LiveAppFrame } from './components/LiveAppFrame'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { RuntimeFrame } from './components/RuntimeFrame'
 import { TreeView } from './components/TreeView'
 import { WhyPanel } from './components/WhyPanel'
 import { Toolbar } from './components/Toolbar'
@@ -8,6 +8,10 @@ import { Editor } from './components/Editor'
 import { CompareView } from './components/CompareView'
 import { ResizeHandle } from './components/ResizeHandle'
 import { useStore } from './store'
+import { compile } from './compileClient'
+import { RuntimeSession } from './runtime-session/RuntimeSession'
+import { RuntimeSessionProvider, useSessionState } from './runtime-session/react'
+import { deriveStatus } from './runtime-session/reduce'
 
 // Panel-size bounds. The two side columns are draggable; the tree (middle)
 // flexes, and MID_MIN keeps it from being squeezed away.
@@ -44,10 +48,41 @@ function persist(key: string, value: number) {
 }
 
 export function App() {
-  const status = useStore((s) => s.status)
-  const error = useStore((s) => s.error)
   const editorOpen = useStore((s) => s.editorOpen)
   const compareOn = useStore((s) => s.compareOn)
+  const source = useStore((s) => s.source)
+  const sourceEpoch = useStore((s) => s.sourceEpoch)
+
+  // The single-mode runtime session owns the iframe lifecycle + render-log state.
+  const session = useMemo(() => new RuntimeSession(compile), [])
+  const sessionState = useSessionState(session)
+  const status = deriveStatus(sessionState)
+  const error = sessionState.error
+  const prevEpoch = useRef(sourceEpoch)
+
+  // Bridge: feed authored source to the session (debounced edit, immediate swap),
+  // and lift the session's interaction signal back into view state.
+  useEffect(() => {
+    const swapped = prevEpoch.current !== sourceEpoch
+    prevEpoch.current = sourceEpoch
+    if (swapped) {
+      session.clear()
+      session.setSource(source, { immediate: true })
+    } else {
+      session.setSource(source)
+    }
+  }, [source, sourceEpoch, session])
+  useEffect(
+    () =>
+      session.subscribe(() => {
+        const st = session.getState()
+        if (st.latest && st.latest.trigger.type !== 'mount') useStore.getState().markInteracted()
+      }),
+    [session],
+  )
+  useEffect(() => {
+    if (import.meta.env.DEV) (window as unknown as { __rrSession?: RuntimeSession }).__rrSession = session
+  }, [session])
 
   const panesRef = useRef<HTMLElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
@@ -87,7 +122,8 @@ export function App() {
   }
 
   return (
-    <div className="shell">
+    <RuntimeSessionProvider value={session}>
+      <div className="shell">
       <header className="masthead">
         <div className="brand">
           <h1>How React Renders</h1>
@@ -101,7 +137,7 @@ export function App() {
 
       <Toolbar />
 
-      {error?.phase === 'compile' && (
+      {!compareOn && error?.phase === 'compile' && (
         <div className="compile-error">
           <span className="ce-tag">won’t compile</span>
           <span className="ce-msg">{error.message}</span>
@@ -121,7 +157,7 @@ export function App() {
           <section className="pane pane-app">
             <div className="pane-head">Live app</div>
             <div className="pane-body">
-              <LiveAppFrame />
+              <RuntimeFrame session={session} />
               <CoachMark />
             </div>
           </section>
@@ -216,6 +252,7 @@ export function App() {
           <Editor />
         </section>
       )}
-    </div>
+      </div>
+    </RuntimeSessionProvider>
   )
 }

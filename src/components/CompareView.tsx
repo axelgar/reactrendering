@@ -1,67 +1,48 @@
-import { useEffect, useRef, useState } from 'react'
-import { isRuntimeMessage, SHELL_SOURCE, type CommitFrame, type ContextLink, type TreeNode } from '../../shared/protocol'
+import { useEffect, useMemo, useRef } from 'react'
 import { compile } from '../compileClient'
 import { useStore } from '../store'
 import { TreeSvg } from './TreeSvg'
+import { RuntimeSession } from '../runtime-session/RuntimeSession'
+import { IframeTransport } from '../runtime-session/transport'
+import { useSessionState } from '../runtime-session/react'
 import baseSrc from '../../runtime/scenarios/cascade.plain.tsx?raw'
 import memoSrc from '../../runtime/scenarios/cascade.memo.plain.tsx?raw'
-
-interface SideData {
-  tree: TreeNode[]
-  contextLinks: ContextLink[]
-  latest: CommitFrame | null
-  history: CommitFrame[]
-  ready: boolean
-}
-const EMPTY: SideData = { tree: [], contextLinks: [], latest: null, history: [], ready: false }
+import type { CommitFrame } from '../../shared/protocol'
 
 const renderedCount = (f: CommitFrame | null) => (f ? f.renders.filter((r) => r.rendered).length : 0)
 const noop = () => {}
 
-// Two coordinated runtime instances (memo off | memo on). One real click in
-// either app is mirrored to the other (the apps are structurally identical), so
-// a single action drives both and the trees diverge side by side.
+// Two coordinated RuntimeSessions (memo off | memo on). All the per-runtime
+// lifecycle (iframe wiring, compile→run, message→state) is the session's job now;
+// Compare Mode only adds the cross-runtime concern: fan one real click to both
+// apps (they render identical DOM) so a single action drives both trees.
 export function CompareView() {
   const speed = useStore((s) => s.speed)
   const layers = useStore((s) => s.layers)
   const aRef = useRef<HTMLIFrameElement>(null)
   const bRef = useRef<HTMLIFrameElement>(null)
-  const [a, setA] = useState<SideData>(EMPTY)
-  const [b, setB] = useState<SideData>(EMPTY)
+  const sessionA = useMemo(() => new RuntimeSession(compile), [])
+  const sessionB = useMemo(() => new RuntimeSession(compile), [])
+  const a = useSessionState(sessionA)
+  const b = useSessionState(sessionB)
 
   useEffect(() => {
-    function handle(ev: MessageEvent) {
-      const isA = ev.source === aRef.current?.contentWindow
-      const isB = ev.source === bRef.current?.contentWindow
-      if ((!isA && !isB) || !isRuntimeMessage(ev.data)) return
-      const setData = isA ? setA : setB
-      const msg = ev.data
-      if (msg.kind === 'tree') setData((d) => ({ ...d, tree: msg.nodes, contextLinks: msg.contextLinks }))
-      else if (msg.kind === 'commit')
-        setData((d) => ({ ...d, latest: msg.frame, history: [...d.history, msg.frame].slice(-50) }))
-      else if (msg.kind === 'ready') setData((d) => ({ ...d, ready: true }))
+    if (!aRef.current || !bRef.current) return
+    sessionA.attach(new IframeTransport(aRef.current))
+    sessionB.attach(new IframeTransport(bRef.current))
+    sessionA.setSource(baseSrc, { immediate: true })
+    sessionB.setSource(memoSrc, { immediate: true })
+    return () => {
+      sessionA.dispose()
+      sessionB.dispose()
     }
-    window.addEventListener('message', handle)
-    return () => window.removeEventListener('message', handle)
-  }, [])
+  }, [sessionA, sessionB])
 
+  // Mirror one real click to the other app by structural child-index path (the
+  // apps render identical DOM, so paths line up). Wired once both are ready.
+  const bothReady = a.ready && b.ready
   useEffect(() => {
-    if (!a.ready) return
-    compile(baseSrc)
-      .then((code) => aRef.current?.contentWindow?.postMessage({ source: SHELL_SOURCE, kind: 'run', code }, '*'))
-      .catch(noop)
-  }, [a.ready])
-  useEffect(() => {
-    if (!b.ready) return
-    compile(memoSrc)
-      .then((code) => bRef.current?.contentWindow?.postMessage({ source: SHELL_SOURCE, kind: 'run', code }, '*'))
-      .catch(noop)
-  }, [b.ready])
-
-  // Mirror clicks between the two apps by structural path (they render identical
-  // DOM, so child-index paths line up).
-  useEffect(() => {
-    if (!a.ready || !b.ready) return
+    if (!bothReady) return
     const docA = aRef.current?.contentDocument
     const docB = bRef.current?.contentDocument
     if (!docA || !docB) return
@@ -84,8 +65,8 @@ export function CompareView() {
       return n as (Node & { click?: () => void }) | null
     }
     const mk = (src: Document, dst: Document) => (e: Event) => {
-      // Note: `instanceof Node` would be false here — e.target belongs to the
-      // iframe's realm, not the shell's. Use duck typing instead.
+      // `instanceof Node` would be false here — e.target belongs to the iframe's
+      // realm, not the shell's. Use duck typing instead.
       const origin = e.target as (Node & { parentNode: Node | null }) | null
       if (mirroring || !origin || !origin.parentNode) return
       const target = elAt(dst.body, pathOf(origin, src.body))
@@ -106,7 +87,7 @@ export function CompareView() {
       docA.removeEventListener('click', hA, true)
       docB.removeEventListener('click', hB, true)
     }
-  }, [a.ready, b.ready])
+  }, [bothReady])
 
   const interacted = !!a.latest && a.latest.trigger.type !== 'mount'
 

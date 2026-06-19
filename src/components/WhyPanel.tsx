@@ -1,5 +1,6 @@
 import { useStore } from '../store'
 import { scenarioById } from '../scenarios'
+import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 import type { CommitFrame } from '../../shared/protocol'
 
 function triggerText(frame: CommitFrame): string {
@@ -10,11 +11,10 @@ function triggerText(frame: CommitFrame): string {
 }
 
 export function WhyPanel() {
-  const latest = useStore((s) => s.latest)
+  const { latest, tree } = useRuntimeSession()
+  const { forceNode } = useRuntimeActions()
   const hasInteracted = useStore((s) => s.hasInteracted)
   const selectedId = useStore((s) => s.selectedId)
-  const tree = useStore((s) => s.tree)
-  const forceUpdate = useStore((s) => s.forceUpdate)
   const select = useStore((s) => s.select)
 
   const scenarioId = useStore((s) => s.scenarioId)
@@ -101,7 +101,7 @@ export function WhyPanel() {
                 ) : (
                   <p className="sel-reason muted">Did not re-render in the last commit.</p>
                 )}
-                <button className="force-btn" onClick={() => forceUpdate(selectedNode.id)}>
+                <button className="force-btn" onClick={() => forceNode(selectedNode.id)}>
                   ⚡ Force this node to re-render
                 </button>
               </div>
