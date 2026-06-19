@@ -137,13 +137,20 @@ describe('RuntimeSession', () => {
     expect(transport.sent).toContainEqual({ source: SHELL_SOURCE, kind: 'forceUpdate', id: 'node-7' })
   })
 
-  it('reset sends a reset message and clears the render log', async () => {
+  it('reset re-runs the current source from scratch instead of reloading the iframe', async () => {
     const { transport, session } = await readySession()
+    session.setSource('A', { immediate: true })
+    await vi.advanceTimersByTimeAsync(0)
     transport.emit(commitMsg(mountFrame))
+    expect(session.getState().latest?.seq).toBe(1)
+
+    transport.sent.length = 0
     session.reset()
-    expect(transport.sent).toContainEqual({ source: SHELL_SOURCE, kind: 'reset' })
-    expect(session.getState().latest).toBeNull()
-    expect(session.getState().ready).toBe(false)
+    expect(session.getState().latest).toBeNull() // render log dropped immediately
+    expect(session.getState().ready).toBe(true) // connection stays up (no reload)
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(transport.runs()).toEqual(['C(A)']) // current source re-ran over the live wire
   })
 
   it('detaches cleanly: a detached transport receives nothing and stops driving state', async () => {

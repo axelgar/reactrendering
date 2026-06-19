@@ -89,10 +89,18 @@ describe('reduce', () => {
     expect(cleared.ready).toBe(true) // still connected
   })
 
-  it('reset returns to the initial state', () => {
+  it('reset clears the render log and any error but stays connected (re-runs in place)', () => {
     let s = reduce(initialSessionState, ready())
     s = reduce(s, treeMsg([node('a')]))
-    expect(reduce(s, { kind: 'reset' })).toEqual(initialSessionState)
+    s = reduce(s, commitMsg(frame(1)))
+    s = reduce(s, errorMsg('boom'))
+    const r = reduce(s, { kind: 'reset' })
+    expect(r.tree).toEqual([])
+    expect(r.contextLinks).toEqual([])
+    expect(r.latest).toBeNull()
+    expect(r.history).toEqual([])
+    expect(r.error).toBeNull()
+    expect(r.ready).toBe(true) // connection stays up; the queued run repopulates it
   })
 
   it('ignores unknown events without churning the reference', () => {

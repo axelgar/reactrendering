@@ -59,8 +59,13 @@ export class RuntimeSession {
   }
 
   reset(): void {
-    this.transport?.send(shellMsg.reset())
+    // Re-run the current source from scratch rather than reloading the iframe: a
+    // fresh `run` makes the runtime resetRuntime() and remount the whole tree under
+    // a new key (a full reset of the live app's React + module state), over the very
+    // compile→run path initial load and live edits already use. Reloading the iframe
+    // and waiting for a new `ready` to re-run could strand it at "Compiling…".
     this.dispatch({ kind: 'reset' })
+    this.scheduleRun(0)
   }
 
   dispose(): void {

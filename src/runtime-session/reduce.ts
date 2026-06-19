@@ -61,8 +61,11 @@ export function reduce(state: SessionState, e: SessionEvent): SessionState {
       // Scenario/variant swap: drop the old render log, keep the connection.
       return { ...state, tree: [], contextLinks: [], latest: null, history: [] }
     case 'reset':
-      // Runtime is reloading; a fresh `ready` will re-run the current source.
-      return initialSessionState
+      // Reset re-runs the current source from scratch over the live connection
+      // (the runtime calls resetRuntime() and remounts under a fresh key). Drop
+      // the old render log and any error, but stay `ready` so the queued run can
+      // fire at once — no iframe reload, no `ready` handshake to strand on.
+      return { ...state, tree: [], contextLinks: [], latest: null, history: [], error: null }
     default:
       return state
   }

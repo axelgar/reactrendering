@@ -69,8 +69,6 @@ export function Host() {
         }
       } else if (msg.kind === 'forceUpdate') {
         forceNode(msg.id)
-      } else if (msg.kind === 'reset') {
-        window.location.reload()
       }
     }
 

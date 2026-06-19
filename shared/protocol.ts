@@ -63,7 +63,6 @@ export type RuntimeMessage =
 /** shell (parent) → runtime (iframe) */
 export type ShellMessage =
   | { source: typeof SHELL_SOURCE; kind: 'forceUpdate'; id: NodeId }
-  | { source: typeof SHELL_SOURCE; kind: 'reset' }
   | { source: typeof SHELL_SOURCE; kind: 'run'; code: string }
 
 export const RUNTIME_SOURCE = 'rr-runtime'
@@ -73,7 +72,6 @@ export const SHELL_SOURCE = 'rr-shell'
 export const shellMsg = {
   run: (code: string): ShellMessage => ({ source: SHELL_SOURCE, kind: 'run', code }),
   force: (id: NodeId): ShellMessage => ({ source: SHELL_SOURCE, kind: 'forceUpdate', id }),
-  reset: (): ShellMessage => ({ source: SHELL_SOURCE, kind: 'reset' }),
 }
 
 export function isRuntimeMessage(data: unknown): data is RuntimeMessage {
