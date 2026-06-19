@@ -18,7 +18,6 @@
     "@babel/standalone": "^7.26.0",
     "@codemirror/lang-javascript": "^6.2.0",
     "@codemirror/state": "^6.4.0",
-    "@codemirror/view": "^6.34.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "codemirror": "^6.0.1",
     "d3-hierarchy": "^3.1.2",
@@ -37,7 +36,6 @@
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0",
     "vite": "^7.0.0",
-    "vite-plugin-node-polyfills": "^0.28.0",
     "vitest": "^4.1.9",
     "wrangler": "^4.100.0"
   }

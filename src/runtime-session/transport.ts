@@ -29,9 +29,4 @@ export class IframeTransport implements RuntimeTransport {
   dispose(): void {
     /* the subscribe() cleanup owns listener teardown; nothing else to release */
   }
-
-  /** The iframe's live document — used only by Compare Mode's click-mirroring. */
-  get document(): Document | null {
-    return this.iframe.contentDocument
-  }
 }
