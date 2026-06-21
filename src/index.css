@@ -1135,3 +1135,51 @@ body.rr-resizing iframe {
 .rr-replay {
   display: inline-block;
 }
+
+/* ── Mobile / narrow viewports ────────────────────────────────── */
+/* The 3-column pane grid (300 + 1fr + 340) needs ~880px to give the middle
+   tree room; below that it overflows and the tree starves to zero width while
+   the why panel runs off-screen. Stack the panes into one scrolling column and
+   drop the drag handles (a pointer-only affordance).
+   ponytail: single breakpoint; revisit only if a tablet tier is actually wanted. */
+@media (max-width: 820px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .shell {
+    height: auto;
+    min-height: 100%;
+    padding: 14px 14px 18px;
+  }
+
+  .panes {
+    flex: none;
+    grid-template-columns: 1fr;
+  }
+
+  /* The iframe and SVG panes need a real height; the page scrolls. The why
+     panel is text — let it grow to its content instead of trapping a scroll. */
+  .pane-app,
+  .pane-tree {
+    height: 56vh;
+    min-height: 340px;
+  }
+
+  .col-resizer,
+  .row-resizer {
+    display: none;
+  }
+
+  /* Compare mode: stack the two runtimes instead of squeezing them side by side. */
+  .compare-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-col {
+    min-height: 70vh;
+  }
+}
