@@ -8,6 +8,7 @@ import { Editor } from './components/Editor'
 import { CompareView } from './components/CompareView'
 import { ResizeHandle } from './components/ResizeHandle'
 import { useStore, useT } from './store'
+import { LANGS, type Lang } from './i18n'
 import { compile } from './compileClient'
 import { RuntimeSession } from './runtime-session/RuntimeSession'
 import { RuntimeSessionProvider, useSessionState } from './runtime-session/react'
@@ -54,6 +55,7 @@ export function App() {
   const sourceEpoch = useStore((s) => s.sourceEpoch)
   const t = useT()
   const lang = useStore((s) => s.lang)
+  const setLang = useStore((s) => s.setLang)
   useEffect(() => {
     document.documentElement.lang = lang
   }, [lang])
@@ -134,9 +136,30 @@ export function App() {
           <h1>{t.brand}</h1>
           <p>{t.tagline}</p>
         </div>
-        <div className={`status status-${status}`}>
-          <span className="dot" />
-          {status === 'ready' ? t.status.ready : status === 'error' ? t.status.error : t.status.connecting}
+        <div className="masthead-right">
+          <div className={`status status-${status}`}>
+            <span className="dot" />
+            {status === 'ready' ? t.status.ready : status === 'error' ? t.status.error : t.status.connecting}
+          </div>
+          <label className="lang-picker" title={t.language}>
+            <svg className="lang-globe" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18" />
+              <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
+            </svg>
+            <select
+              className="lang-select"
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              aria-label={t.language}
+            >
+              {LANGS.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 

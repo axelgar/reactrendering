@@ -1,12 +1,9 @@
 import { SCENARIOS, scenarioById } from '../scenarios'
 import { useStore, useT } from '../store'
-import { LANGS, type Lang } from '../i18n'
 import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 
 export function Toolbar() {
   const t = useT()
-  const lang = useStore((s) => s.lang)
-  const setLang = useStore((s) => s.setLang)
   const speed = useStore((s) => s.speed)
   const setSpeed = useStore((s) => s.setSpeed)
   const replay = useStore((s) => s.replay)
@@ -120,17 +117,6 @@ export function Toolbar() {
         <button className="tb-btn" onClick={reset}>
           {t.toolbar.reset}
         </button>
-      </div>
-
-      <div className="tb-group">
-        <label className="tb-label">{t.language}</label>
-        <select className="tb-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t.language}>
-          {LANGS.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.label}
-            </option>
-          ))}
-        </select>
       </div>
     </div>
   )

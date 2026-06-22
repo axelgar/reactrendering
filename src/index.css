@@ -103,6 +103,12 @@ a:focus-visible {
   font-size: 13px;
 }
 
+.masthead-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -110,6 +116,44 @@ a:focus-visible {
   font-size: 12px;
   color: var(--muted);
   text-transform: lowercase;
+}
+
+/* Language picker: globe icon + select, sitting next to the live status. */
+.lang-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.lang-globe {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.lang-select {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 4px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.lang-picker:hover .lang-select,
+.lang-picker:hover .lang-globe {
+  color: var(--ink);
+}
+
+.lang-select:hover {
+  border-color: var(--line);
 }
 
 .status .dot {
