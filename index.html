@@ -30,9 +30,54 @@
       content="See exactly when React components re-render — and why. Real instrumented React, visualized."
     />
     <meta name="twitter:image" content="/og.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "How React Renders",
+        "url": "https://reactrendering.com/",
+        "description": "An interactive playground that shows, with real instrumented React, exactly when components re-render, what actually touches the DOM, and how memo, context, and the React Compiler change the picture.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any (web browser)",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "mainEntity": {
+          "@type": "ItemList",
+          "name": "React re-render concepts",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "The default cascade", "description": "Parent state re-renders the whole subtree — props are irrelevant." },
+            { "@type": "ListItem", "position": 2, "name": "Context", "description": "Every consumer re-renders when the context value changes, even through memoized middles." },
+            { "@type": "ListItem", "position": 3, "name": "Context pitfall", "description": "An inline object as the provider value is new every render, so unrelated state re-renders every consumer." },
+            { "@type": "ListItem", "position": 4, "name": "Composition", "description": "Content passed as children is created by the parent, so it doesn't re-render when a wrapper's own state changes." },
+            { "@type": "ListItem", "position": 5, "name": "memo & referential identity", "description": "React.memo only bails when props are referentially equal — an inline handler is a new function every render." },
+            { "@type": "ListItem", "position": 6, "name": "Where state lives", "description": "State placement sets the blast radius: a filter held at the top re-renders the whole app." }
+          ]
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>How React Renders</h1>
+      <p>
+        An interactive playground that shows, with real instrumented React, exactly when
+        components re-render, what actually touches the DOM, and how React.memo, context, and the
+        React Compiler change the picture. Enable JavaScript to run the live, editable version.
+      </p>
+      <h2>1 · The default cascade</h2>
+      <p>Parent state re-renders the whole subtree — props are irrelevant. Toggle a to-do and every box flashes (re-render), but only one rings green (it changed the DOM). Flip React.memo or the React Compiler on and watch the cascade shrink.</p>
+      <h2>2 · Context</h2>
+      <p>Every consumer re-renders when the context value changes — and React reaches them directly, skipping memoized middles. Switch the theme and watch the flash jump over the memoized sections to the consumers inside them.</p>
+      <h2>3 · Context pitfall</h2>
+      <p>An inline object as the provider value is a new object every render — so even unrelated state re-renders every consumer. Memoize the value and the consumers bail.</p>
+      <h2>4 · Composition</h2>
+      <p>Content passed as children is created by the parent, so it doesn't re-render when a wrapper's own state changes. Lift the content up and it bails — the same element, made higher up.</p>
+      <h2>5 · memo &amp; referential identity</h2>
+      <p>React.memo only bails when its props are referentially equal — an inline handler is a new function every render, so memo can't help. Use useCallback to keep a stable function identity and the list bails.</p>
+      <h2>6 · Where state lives</h2>
+      <p>State placement sets the blast radius: a filter held at the top re-renders the whole app, even the parts that never read it. Push the state down and only the list subtree re-renders — no memo required, just better placement.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
