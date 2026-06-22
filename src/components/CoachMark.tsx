@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useStore } from '../store'
+import { useStore, useT } from '../store'
 
 const KEY = 'rr-coach-dismissed'
 
 export function CoachMark() {
+  const t = useT()
   const hasInteracted = useStore((s) => s.hasInteracted)
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -28,7 +29,7 @@ export function CoachMark() {
 
   return (
     <div className="coach">
-      <span>Click any to-do and watch the tree light up.</span>
+      <span>{t.coach.text}</span>
       <button
         onClick={() => {
           try {
@@ -39,7 +40,7 @@ export function CoachMark() {
           setDismissed(true)
         }}
       >
-        got it
+        {t.coach.gotIt}
       </button>
     </div>
   )

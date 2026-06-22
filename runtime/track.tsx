@@ -20,6 +20,7 @@ import {
   RUNTIME_SOURCE,
   type ContextLink,
   type NodeId,
+  type ReasonCode,
   type RenderEvent,
   type RuntimeMessage,
   type Trigger,
@@ -228,25 +229,32 @@ export function forceNode(id: NodeId) {
 }
 
 // ── Causality ────────────────────────────────────────────────────────────────
-function explain(e: RenderEvent, trigger: Trigger): string {
+// Returns a machine code (localized by the shell) plus an English fallback string.
+function explain(e: RenderEvent, trigger: Trigger): { code: ReasonCode; text: string } {
   if (e.renderCount === 1) {
     return trigger.type === 'mount'
-      ? 'Mounted for the first time.'
-      : 'Mounted — a new instance was added to the tree.'
+      ? { code: 'mount-first', text: 'Mounted for the first time.' }
+      : { code: 'mount-new', text: 'Mounted — a new instance was added to the tree.' }
   }
   if (trigger.type === 'force' && e.id === trigger.id) {
-    return 'Forced to re-render — you poked this node directly.'
+    return { code: 'forced', text: 'Forced to re-render — you poked this node directly.' }
   }
   if (trigger.type === 'state' && e.id === trigger.sourceId) {
-    return 'State changed here — this is where the update starts.'
+    return { code: 'state-source', text: 'State changed here — this is where the update starts.' }
   }
   if (contextChanged.has(e.id)) {
-    return 'Re-rendered because a context it reads changed — React re-renders consumers directly, even past memoized parents.'
+    return {
+      code: 'context',
+      text: 'Re-rendered because a context it reads changed — React re-renders consumers directly, even past memoized parents.',
+    }
   }
   if (e.propsChanged.length > 0) {
-    return `Re-rendered because props changed: ${e.propsChanged.join(', ')}.`
+    return { code: 'props', text: `Re-rendered because props changed: ${e.propsChanged.join(', ')}.` }
   }
-  return 'Re-rendered only because its parent did — its props are identical (wasted render).'
+  return {
+    code: 'wasted',
+    text: 'Re-rendered only because its parent did — its props are identical (wasted render).',
+  }
 }
 
 function diffProps(prev: Record<string, unknown>, next: Record<string, unknown>): string[] {
@@ -279,7 +287,10 @@ function flushCommit(durationMs: number) {
   if (pending.length === 0) return
   const trigger: Trigger = currentTrigger ?? { type: 'mount' }
   const renderedIds = new Set(pending.map((e) => e.id))
-  const renders = pending.map((e) => ({ ...e, committed: committed.has(e.id), reason: explain(e, trigger) }))
+  const renders = pending.map((e) => {
+    const { code, text } = explain(e, trigger)
+    return { ...e, committed: committed.has(e.id), reason: text, reasonCode: code }
+  })
 
   // Bailouts: a mounted node whose parent re-rendered but which itself did not.
   // That gap is exactly what memo (or a stable element) buys you.
@@ -290,6 +301,7 @@ function flushCommit(durationMs: number) {
         name: node.name,
         rendered: false,
         reason: 'Skipped (bailout) — memoized, and its props didn’t change.',
+        reasonCode: 'bailout',
         propsChanged: [],
         renderCount: renderCounts.get(node.id) ?? 0,
         committed: false,
@@ -354,6 +366,7 @@ export function track<P extends object>(name: string, Comp: ComponentType<P>): F
       name,
       rendered: true,
       reason: '',
+      reasonCode: 'mount-first', // placeholder; explain() sets the real code at flush
       propsChanged,
       renderCount,
       committed: false,

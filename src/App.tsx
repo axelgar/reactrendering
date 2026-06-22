@@ -7,7 +7,7 @@ import { CoachMark } from './components/CoachMark'
 import { Editor } from './components/Editor'
 import { CompareView } from './components/CompareView'
 import { ResizeHandle } from './components/ResizeHandle'
-import { useStore } from './store'
+import { useStore, useT } from './store'
 import { compile } from './compileClient'
 import { RuntimeSession } from './runtime-session/RuntimeSession'
 import { RuntimeSessionProvider, useSessionState } from './runtime-session/react'
@@ -52,6 +52,11 @@ export function App() {
   const compareOn = useStore((s) => s.compareOn)
   const source = useStore((s) => s.source)
   const sourceEpoch = useStore((s) => s.sourceEpoch)
+  const t = useT()
+  const lang = useStore((s) => s.lang)
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   // The single-mode runtime session owns the iframe lifecycle + render-log state.
   const session = useMemo(() => new RuntimeSession(compile), [])
@@ -126,12 +131,12 @@ export function App() {
       <div className="shell">
       <header className="masthead">
         <div className="brand">
-          <h1>How React Renders</h1>
-          <p>See exactly when components re-render — and why.</p>
+          <h1>{t.brand}</h1>
+          <p>{t.tagline}</p>
         </div>
         <div className={`status status-${status}`}>
           <span className="dot" />
-          {status === 'ready' ? 'live' : status === 'error' ? 'error' : 'connecting…'}
+          {status === 'ready' ? t.status.ready : status === 'error' ? t.status.error : t.status.connecting}
         </div>
       </header>
 
@@ -139,7 +144,7 @@ export function App() {
 
       {!compareOn && error?.phase === 'compile' && (
         <div className="compile-error">
-          <span className="ce-tag">won’t compile</span>
+          <span className="ce-tag">{t.wontCompile}</span>
           <span className="ce-msg">{error.message}</span>
         </div>
       )}
@@ -155,7 +160,7 @@ export function App() {
           style={{ '--col-app': `${colApp}px`, '--col-why': `${colWhy}px` } as CSSProperties}
         >
           <section className="pane pane-app">
-            <div className="pane-head">Live app</div>
+            <div className="pane-head">{t.pane.app}</div>
             <div className="pane-body">
               <RuntimeFrame session={session} />
               <CoachMark />
@@ -165,7 +170,7 @@ export function App() {
           <ResizeHandle
             className="col-resizer"
             orientation="vertical"
-            ariaLabel="Resize the live-app panel"
+            ariaLabel={t.resize.app}
             style={{ left: 'calc(var(--col-app) + 6px)' }}
             onStart={() => {
               drag.current.startApp = colApp
@@ -182,7 +187,7 @@ export function App() {
           />
 
           <section className="pane pane-tree">
-            <div className="pane-head">Component tree</div>
+            <div className="pane-head">{t.pane.tree}</div>
             <div className="pane-body">
               <TreeView />
             </div>
@@ -191,7 +196,7 @@ export function App() {
           <ResizeHandle
             className="col-resizer"
             orientation="vertical"
-            ariaLabel="Resize the why panel"
+            ariaLabel={t.resize.why}
             style={{ left: 'calc(100% - var(--col-why) - 6px)' }}
             onStart={() => {
               drag.current.startWhy = colWhy
@@ -208,7 +213,7 @@ export function App() {
           />
 
           <section className="pane pane-why">
-            <div className="pane-head">Why</div>
+            <div className="pane-head">{t.pane.why}</div>
             <div className="pane-body">
               <WhyPanel />
             </div>
@@ -221,7 +226,7 @@ export function App() {
           <ResizeHandle
             className="row-resizer"
             orientation="horizontal"
-            ariaLabel="Resize the code editor"
+            ariaLabel={t.resize.editor}
             onStart={() => {
               drag.current.startH = drawerRef.current?.offsetHeight ?? 0
               drag.current.h = drag.current.startH
@@ -247,7 +252,7 @@ export function App() {
             }}
           />
           <div className="pane-head">
-            Code · <span className="ed-hint">edits run live (your real React, instrumented)</span>
+            {t.code.head} · <span className="ed-hint">{t.code.hint}</span>
           </div>
           <Editor />
         </section>

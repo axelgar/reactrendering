@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { stratify, tree as d3tree, type HierarchyNode } from 'd3-hierarchy'
 import type { CommitFrame, ContextLink, NodeId, RenderEvent, TreeNode } from '../../shared/protocol'
-import type { Speed } from '../store'
+import { useT, type Speed } from '../store'
 
 const NW = 116
 const NH = 38
@@ -51,6 +51,7 @@ export function TreeSvg({
   onSelect,
   onForce,
 }: TreeSvgProps) {
+  const t = useT()
   const layout = useMemo(() => {
     if (tree.length === 0) return null
     try {
@@ -87,7 +88,7 @@ export function TreeSvg({
   if (!layout) {
     return (
       <div className="tree-empty">
-        <p>Waiting for the live app…</p>
+        <p>{t.tree.waiting}</p>
       </div>
     )
   }
@@ -117,7 +118,7 @@ export function TreeSvg({
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
       role="group"
-      aria-label="Component tree — focus a node and press Enter to inspect it"
+      aria-label={t.tree.aria}
     >
       <g className="edges">
         {links.map((l, i) => {
@@ -148,14 +149,8 @@ export function TreeSvg({
           const didCommit = committed.has(n.data.id)
           const count = counts.get(n.data.id)
           const delay = speed === 'slow' && ev ? ev.order * 200 : 0
-          const stateLabel = ev
-            ? ev.rendered
-              ? `re-rendered${didCommit ? ', changed the DOM' : ''}`
-              : 'skipped this commit'
-            : ''
-          const ariaLabel = `${n.data.name}${count != null ? `, ${count} render${count === 1 ? '' : 's'}` : ''}${
-            stateLabel ? `, ${stateLabel}` : ''
-          }`
+          const stateLabel = ev ? t.tree.nodeState(ev.rendered, didCommit) : ''
+          const ariaLabel = `${t.tree.nodeAria(n.data.name, count ?? null)}${stateLabel ? `, ${stateLabel}` : ''}`
           return (
             <g
               key={n.data.id}
@@ -225,7 +220,7 @@ export function TreeSvg({
                   onForce(n.data.id)
                 }}
               >
-                <title>Force this component to re-render</title>
+                <title>{t.tree.forceTitle}</title>
                 <circle r={9} />
                 <text textAnchor="middle" dominantBaseline="central">
                   ⚡

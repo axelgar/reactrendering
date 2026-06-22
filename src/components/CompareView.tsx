@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { compile } from '../compileClient'
-import { useStore } from '../store'
+import { useStore, useT } from '../store'
 import { TreeSvg } from './TreeSvg'
 import { RuntimeSession } from '../runtime-session/RuntimeSession'
 import { IframeTransport } from '../runtime-session/transport'
@@ -17,6 +17,7 @@ const noop = () => {}
 // Compare Mode only adds the cross-runtime concern: fan one real click to both
 // apps (they render identical DOM) so a single action drives both trees.
 export function CompareView() {
+  const t = useT()
   const speed = useStore((s) => s.speed)
   const layers = useStore((s) => s.layers)
   const aRef = useRef<HTMLIFrameElement>(null)
@@ -96,27 +97,27 @@ export function CompareView() {
       <div className="compare-banner">
         {interacted ? (
           <span>
-            Same action → <strong>memo off: {renderedCount(a.latest)} re-rendered</strong> ·{' '}
-            <strong className="green-word">memo on: {renderedCount(b.latest)} re-rendered</strong>
+            {t.compare.sameAction} <strong>{t.compare.memoOff(renderedCount(a.latest))}</strong> ·{' '}
+            <strong className="green-word">{t.compare.memoOn(renderedCount(b.latest))}</strong>
           </span>
         ) : (
-          <span>Click a to-do (or any control) in either app — the same action drives both.</span>
+          <span>{t.compare.clickHint}</span>
         )}
       </div>
       <div className="compare-cols">
         <section className="compare-col">
-          <div className="col-head">memo off</div>
+          <div className="col-head">{t.compare.memoOffCol}</div>
           <div className="compare-app">
-            <iframe ref={aRef} src="/runtime.html" title="memo off" className="compare-frame" sandbox="allow-scripts allow-same-origin" />
+            <iframe ref={aRef} src="/runtime.html" title={t.compare.memoOffCol} className="compare-frame" sandbox="allow-scripts allow-same-origin" />
           </div>
           <div className="compare-tree">
             <TreeSvg tree={a.tree} contextLinks={a.contextLinks} latest={a.latest} history={a.history} selectedId={null} speed={speed} layers={layers} replayTick={0} onSelect={noop} onForce={noop} />
           </div>
         </section>
         <section className="compare-col">
-          <div className="col-head green">memo on</div>
+          <div className="col-head green">{t.compare.memoOnCol}</div>
           <div className="compare-app">
-            <iframe ref={bRef} src="/runtime.html" title="memo on" className="compare-frame" sandbox="allow-scripts allow-same-origin" />
+            <iframe ref={bRef} src="/runtime.html" title={t.compare.memoOnCol} className="compare-frame" sandbox="allow-scripts allow-same-origin" />
           </div>
           <div className="compare-tree">
             <TreeSvg tree={b.tree} contextLinks={b.contextLinks} latest={b.latest} history={b.history} selectedId={null} speed={speed} layers={layers} replayTick={0} onSelect={noop} onForce={noop} />

@@ -18,6 +18,17 @@ export interface ContextLink {
   consumerId: NodeId
 }
 
+/** Why a component re-rendered (or didn't). The shell maps these to localized prose. */
+export type ReasonCode =
+  | 'mount-first'
+  | 'mount-new'
+  | 'forced'
+  | 'state-source'
+  | 'context'
+  | 'props'
+  | 'wasted'
+  | 'bailout'
+
 /** What kicked off a commit — used by the narrator to explain causality. */
 export type Trigger =
   | { type: 'mount' }
@@ -30,8 +41,10 @@ export interface RenderEvent {
   name: string
   /** false = the component instance existed but did not re-run (bailed/skipped). */
   rendered: boolean
-  /** Plain-language explanation, derived from real instrumentation. */
+  /** Plain-language explanation (English fallback), derived from real instrumentation. */
   reason: string
+  /** Machine code for the reason, so the shell can localize it (see src/i18n.ts). */
+  reasonCode: ReasonCode
   /** Prop keys whose identity changed since the previous render (Object.is). */
   propsChanged: string[]
   /** Cumulative render count for this instance. */

@@ -11,17 +11,15 @@ import identityCallbackSource from '../runtime/scenarios/identity.callback.plain
 import colocationSource from '../runtime/scenarios/colocation.plain.tsx?raw'
 import colocationPushSource from '../runtime/scenarios/colocation.push.plain.tsx?raw'
 
+// Display text (label/blurb/experiments/variant names) lives in src/i18n.ts,
+// keyed by these ids. This file holds only the wiring: id → source code.
 export interface Variant {
   id: string
-  label: string
   source: string
 }
 
 export interface Scenario {
   id: string
-  label: string
-  blurb: string
-  experiments: string[]
   source: string
   variants: Variant[]
 }
@@ -29,76 +27,32 @@ export interface Scenario {
 export const SCENARIOS: Scenario[] = [
   {
     id: 'cascade',
-    label: '1 · The default cascade',
-    blurb: 'Parent state re-renders the whole subtree — props are irrelevant.',
-    experiments: [
-      'Toggle a to-do — every box flashes (re-render), but only one rings green (it changed the DOM).',
-      'Flip React.memo or the React Compiler on, then toggle again — watch the cascade shrink.',
-    ],
     source: baseSource,
     variants: [
-      { id: 'memo', label: 'React.memo', source: memoSource },
-      { id: 'compiler', label: 'React Compiler', source: compilerSource },
+      { id: 'memo', source: memoSource },
+      { id: 'compiler', source: compilerSource },
     ],
   },
-  {
-    id: 'context',
-    label: '2 · Context',
-    blurb:
-      'Every consumer re-renders when the context value changes — and React reaches them directly, skipping memoized middles.',
-    experiments: [
-      'Switch the theme — watch the flash jump OVER the gray (memoized) Sections to the consumers inside them.',
-    ],
-    source: contextSource,
-    variants: [],
-  },
+  { id: 'context', source: contextSource, variants: [] },
   {
     id: 'context-pitfall',
-    label: '3 · Context pitfall',
-    blurb:
-      'An inline object as the provider value is a new object every render — so even unrelated state re-renders every consumer.',
-    experiments: [
-      'Click "unrelated tick" — the themed consumers re-render even though the theme never changed.',
-      'Flip "Memoized value" on, then tick again — now the consumers bail.',
-    ],
     source: contextPitfallSource,
-    variants: [{ id: 'memo', label: 'Memoized value', source: contextPitfallMemoSource }],
+    variants: [{ id: 'memo', source: contextPitfallMemoSource }],
   },
   {
     id: 'composition',
-    label: '4 · Composition',
-    blurb:
-      'Content passed as children is created by the parent, so it doesn’t re-render when a wrapper’s own state changes.',
-    experiments: [
-      'Collapse/expand the Panel — the expensive content re-renders right along with it.',
-      'Flip "Lift content up" on, then toggle again — the content bails (same element, made higher up).',
-    ],
     source: compositionSource,
-    variants: [{ id: 'lift', label: 'Lift content up', source: compositionLiftSource }],
+    variants: [{ id: 'lift', source: compositionLiftSource }],
   },
   {
     id: 'identity',
-    label: '5 · memo & referential identity',
-    blurb:
-      'memo only bails when its props are referentially equal — an inline handler is a new function every render, so memo can’t help.',
-    experiments: [
-      'Every child is wrapped in React.memo, yet flip the theme and the whole tree still flashes — the handlers are new each render.',
-      'Switch on "Stable handlers", then flip the theme again — the list bails because useCallback kept the same function identity.',
-    ],
     source: identitySource,
-    variants: [{ id: 'callback', label: 'Stable handlers', source: identityCallbackSource }],
+    variants: [{ id: 'callback', source: identityCallbackSource }],
   },
   {
     id: 'colocation',
-    label: '6 · Where state lives',
-    blurb:
-      'State placement sets the blast radius: a filter held at the top re-renders the whole app, even the parts that never read it.',
-    experiments: [
-      'Click a filter chip — Header, Toolbar and Footer all flash, though only the list cares about the filter.',
-      'Switch on "Push state down", then filter again — only the list subtree re-renders. No memo required, just better placement.',
-    ],
     source: colocationSource,
-    variants: [{ id: 'push', label: 'Push state down', source: colocationPushSource }],
+    variants: [{ id: 'push', source: colocationPushSource }],
   },
 ]
 

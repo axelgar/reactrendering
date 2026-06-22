@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { NodeId } from '../shared/protocol'
 import { DEFAULT_SCENARIO, scenarioById } from './scenarios'
+import { detectLang, messages, type Lang } from './i18n'
 
 export type Speed = 'instant' | 'slow'
 
@@ -20,7 +21,9 @@ interface RRState {
   editorOpen: boolean
   compareOn: boolean
   introDismissed: boolean
+  lang: Lang
 
+  setLang: (lang: Lang) => void
   setSource: (source: string) => void
   setScenario: (id: string) => void
   setVariant: (variantId: string | null) => void
@@ -60,7 +63,17 @@ export const useStore = create<RRState>((set) => ({
   editorOpen: false,
   compareOn: false,
   introDismissed: readIntroDismissed(),
+  lang: detectLang(),
 
+  setLang: (lang) => {
+    try {
+      localStorage.setItem('rr-lang', lang)
+    } catch {
+      /* ignore */
+    }
+    document.documentElement.lang = lang
+    set({ lang })
+  },
   setSource: (source) => set({ source }),
   setScenario: (id) =>
     set((s) => {
@@ -105,6 +118,9 @@ export const useStore = create<RRState>((set) => ({
   markInteracted: () => set((s) => (s.hasInteracted ? s : { hasInteracted: true })),
   resetView: () => set({ selectedId: null, hasInteracted: false }),
 }))
+
+// Active translation dictionary for the current language.
+export const useT = () => messages[useStore((s) => s.lang)]
 
 // Dev-only handle for debugging / automated verification.
 if (import.meta.env.DEV) {

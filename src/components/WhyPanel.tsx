@@ -1,16 +1,17 @@
-import { useStore } from '../store'
-import { scenarioById } from '../scenarios'
+import { useStore, useT } from '../store'
 import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 import type { CommitFrame } from '../../shared/protocol'
+import type { Dict } from '../i18n'
 
-function triggerText(frame: CommitFrame): string {
-  const t = frame.trigger
-  if (t.type === 'mount') return 'Initial mount'
-  if (t.type === 'force') return `You forced ${t.name} to re-render`
-  return `You changed state in ${t.sourceName}`
+function triggerText(frame: CommitFrame, t: Dict): string {
+  const tr = frame.trigger
+  if (tr.type === 'mount') return t.why.triggerMount
+  if (tr.type === 'force') return t.why.triggerForced(tr.name)
+  return t.why.triggerState(tr.sourceName)
 }
 
 export function WhyPanel() {
+  const t = useT()
   const { latest, tree } = useRuntimeSession()
   const { forceNode } = useRuntimeActions()
   const hasInteracted = useStore((s) => s.hasInteracted)
@@ -18,7 +19,7 @@ export function WhyPanel() {
   const select = useStore((s) => s.select)
 
   const scenarioId = useStore((s) => s.scenarioId)
-  const scenario = scenarioById(scenarioId)
+  const scenarioText = t.scenarios[scenarioId]
   const introDismissed = useStore((s) => s.introDismissed)
   const dismissIntro = useStore((s) => s.dismissIntro)
   const showIntro = !introDismissed && (!hasInteracted || !latest)
@@ -26,7 +27,7 @@ export function WhyPanel() {
   const selectedEvent = latest?.renders.find((r) => r.id === selectedId) ?? null
 
   const rendered = latest?.renders.filter((r) => r.rendered).length ?? 0
-  const wasted = latest?.renders.filter((r) => r.reason.includes('wasted')).length ?? 0
+  const wasted = latest?.renders.filter((r) => r.reasonCode === 'wasted').length ?? 0
   const skipped = latest?.renders.filter((r) => !r.rendered).length ?? 0
   const committedCount = latest?.committedIds.length ?? 0
 
@@ -38,38 +39,38 @@ export function WhyPanel() {
             <button
               className="intro-dismiss"
               onClick={dismissIntro}
-              title="Hide this — I know how to use it"
-              aria-label="Hide the intro"
+              title={t.why.hideIntroTitle}
+              aria-label={t.why.hideIntroAria}
             >
               ✕
             </button>
-            <p className="why-blurb">{scenario.blurb}</p>
-            <p className="why-try-label">Try this</p>
+            <p className="why-blurb">{scenarioText.blurb}</p>
+            <p className="why-try-label">{t.why.tryThis}</p>
             <ul className="why-experiments">
-              {scenario.experiments.map((x, i) => (
+              {scenarioText.experiments.map((x, i) => (
                 <li key={i}>{x}</li>
               ))}
             </ul>
           </div>
         ) : !latest ? (
-          <p className="why-hint">Interact with the app to see what re-renders, and why.</p>
+          <p className="why-hint">{t.why.interactHint}</p>
         ) : (
           <>
             <div className="why-summary">
-              <h2>{triggerText(latest)}</h2>
+              <h2>{triggerText(latest, t)}</h2>
               <p>
-                <strong>{rendered}</strong> re-rendered{' · '}
-                <strong className="committed-num">{committedCount}</strong> changed the DOM
+                <strong>{rendered}</strong> {t.why.rerendered}{' · '}
+                <strong className="committed-num">{committedCount}</strong> {t.why.changedDom}
                 {skipped > 0 && (
                   <>
                     {' · '}
-                    <strong className="skipped-num">{skipped}</strong> skipped
+                    <strong className="skipped-num">{skipped}</strong> {t.why.skipped}
                   </>
                 )}
                 {wasted > 0 && (
                   <>
                     {' · '}
-                    <strong className="wasted-num">{wasted}</strong> wasted
+                    <strong className="wasted-num">{wasted}</strong> {t.why.wasted}
                   </>
                 )}
               </p>
@@ -80,17 +81,18 @@ export function WhyPanel() {
                 <div className="why-selected-head">
                   <span className="sel-name">{selectedNode.name}</span>
                   <button className="link" onClick={() => select(null)}>
-                    clear
+                    {t.why.clear}
                   </button>
                 </div>
                 {selectedEvent ? (
                   <>
-                    <p className="sel-reason">{selectedEvent.reason}</p>
+                    <p className="sel-reason">{t.reason(selectedEvent.reasonCode, selectedEvent.propsChanged)}</p>
                     <p className="sel-meta">
-                      render #{selectedEvent.renderCount}
+                      {t.why.renderNum(selectedEvent.renderCount)}
                       {selectedEvent.propsChanged.length > 0 && (
                         <>
-                          {' · changed props: '}
+                          {' · '}
+                          {t.why.changedProps}
                           {selectedEvent.propsChanged.map((p) => (
                             <code key={p}>{p}</code>
                           ))}
@@ -99,10 +101,10 @@ export function WhyPanel() {
                     </p>
                   </>
                 ) : (
-                  <p className="sel-reason muted">Did not re-render in the last commit.</p>
+                  <p className="sel-reason muted">{t.why.notRerendered}</p>
                 )}
                 <button className="force-btn" onClick={() => forceNode(selectedNode.id)}>
-                  ⚡ Force this node to re-render
+                  {t.why.forceNode}
                 </button>
               </div>
             )}
@@ -112,14 +114,14 @@ export function WhyPanel() {
                 <li
                   key={r.id}
                   className={`why-row${r.id === selectedId ? ' active' : ''}${
-                    r.reason.includes('wasted') ? ' is-wasted' : ''
+                    r.reasonCode === 'wasted' ? ' is-wasted' : ''
                   }${!r.rendered ? ' is-bailed' : ''}`}
                   onClick={() => select(r.id)}
                 >
                   <span className="row-name">{r.name}</span>
                   <span className="row-reason">
-                    {r.reason}
-                    {r.committed && <span className="dom-tag">changed DOM</span>}
+                    {t.reason(r.reasonCode, r.propsChanged)}
+                    {r.committed && <span className="dom-tag">{t.why.changedDomTag}</span>}
                   </span>
                 </li>
               ))}
@@ -127,10 +129,7 @@ export function WhyPanel() {
           </>
         )}
       </div>
-      <p className="disclosure">
-        Running a tracked copy of real React — the code is genuine; we add invisible instrumentation
-        to observe and poke renders.
-      </p>
+      <p className="disclosure">{t.why.disclosure}</p>
     </aside>
   )
 }

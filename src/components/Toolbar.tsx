@@ -1,8 +1,12 @@
 import { SCENARIOS, scenarioById } from '../scenarios'
-import { useStore } from '../store'
+import { useStore, useT } from '../store'
+import { LANGS, type Lang } from '../i18n'
 import { useRuntimeActions, useRuntimeSession } from '../runtime-session/react'
 
 export function Toolbar() {
+  const t = useT()
+  const lang = useStore((s) => s.lang)
+  const setLang = useStore((s) => s.setLang)
   const speed = useStore((s) => s.speed)
   const setSpeed = useStore((s) => s.setSpeed)
   const replay = useStore((s) => s.replay)
@@ -21,16 +25,17 @@ export function Toolbar() {
   const replayTick = useStore((s) => s.replayTick)
 
   const scenario = scenarioById(scenarioId)
+  const scenarioText = t.scenarios[scenarioId]
   const canCompare = scenarioId === 'cascade'
 
   return (
     <div className="toolbar-bar">
       <div className="tb-group">
-        <label className="tb-label">Scenario</label>
+        <label className="tb-label">{t.toolbar.scenario}</label>
         <select className="tb-select" value={scenarioId} onChange={(e) => setScenario(e.target.value)} disabled={compareOn}>
           {SCENARIOS.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              {t.scenarios[s.id].label}
             </option>
           ))}
         </select>
@@ -38,24 +43,27 @@ export function Toolbar() {
 
       <div className="tb-group">
         <button className={editorOpen ? 'tb-btn on' : 'tb-btn'} onClick={toggleEditor}>
-          {editorOpen ? '✕ Hide code' : '‹ › Edit code'}
+          {editorOpen ? t.toolbar.hideCode : t.toolbar.editCode}
         </button>
       </div>
 
       {scenario.variants.length > 0 && (
         <div className="tb-group">
-          <label className="tb-label">What-if</label>
-          {scenario.variants.map((v) => (
-            <button
-              key={v.id}
-              className={variantId === v.id ? 'memo-toggle on' : 'memo-toggle'}
-              onClick={() => setVariant(variantId === v.id ? null : v.id)}
-              disabled={compareOn}
-              title={`Swap to the ${v.label} version of this scenario`}
-            >
-              <span className="dot-toggle" /> {v.label} {variantId === v.id ? 'on' : 'off'}
-            </button>
-          ))}
+          <label className="tb-label">{t.toolbar.whatIf}</label>
+          {scenario.variants.map((v) => {
+            const label = scenarioText.variants[v.id] ?? v.id
+            return (
+              <button
+                key={v.id}
+                className={variantId === v.id ? 'memo-toggle on' : 'memo-toggle'}
+                onClick={() => setVariant(variantId === v.id ? null : v.id)}
+                disabled={compareOn}
+                title={t.toolbar.swapTo(label)}
+              >
+                <span className="dot-toggle" /> {label} {variantId === v.id ? t.toolbar.on : t.toolbar.off}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -64,9 +72,9 @@ export function Toolbar() {
           <button
             className={compareOn ? 'tb-btn on' : 'tb-btn'}
             onClick={toggleCompare}
-            title="Run memo off and memo on side by side; one action drives both"
+            title={t.toolbar.compareTitle}
           >
-            {compareOn ? '✕ Close compare' : '⇆ Compare'}
+            {compareOn ? t.toolbar.closeCompare : t.toolbar.compare}
           </button>
         </div>
       )}
@@ -74,32 +82,32 @@ export function Toolbar() {
       <div className="tb-spacer" />
 
       <div className="tb-group">
-        <label className="tb-label">Layers</label>
-        <span className="layer-chip active">ownership</span>
+        <label className="tb-label">{t.toolbar.layers}</label>
+        <span className="layer-chip active">{t.toolbar.ownership}</span>
         <button
           className={`layer-chip props${layers.props ? ' on' : ''}`}
           onClick={() => toggleLayer('props')}
-          title="Highlight edges where a child received changed props"
+          title={t.toolbar.propsTitle}
         >
-          props
+          {t.toolbar.props}
         </button>
         <button
           className={`layer-chip context${layers.context ? ' on' : ''}`}
           onClick={() => toggleLayer('context')}
-          title="Draw context reach: provider → consumers, even past memoized middles"
+          title={t.toolbar.contextTitle}
         >
-          context
+          {t.toolbar.context}
         </button>
       </div>
 
       <div className="tb-group">
-        <label className="tb-label">Replay</label>
+        <label className="tb-label">{t.toolbar.replay}</label>
         <div className="segmented">
           <button className={speed === 'instant' ? 'on' : ''} onClick={() => setSpeed('instant')}>
-            instant
+            {t.toolbar.instant}
           </button>
           <button className={speed === 'slow' ? 'on' : ''} onClick={() => setSpeed('slow')}>
-            slow
+            {t.toolbar.slow}
           </button>
         </div>
         <button className="tb-btn" onClick={replay} disabled={!hasLatest}>
@@ -107,11 +115,22 @@ export function Toolbar() {
           <span className={replayTick > 0 ? 'rr-replay rr-spin' : 'rr-replay'} key={replayTick} aria-hidden="true">
             ↻
           </span>{' '}
-          replay
+          {t.toolbar.replayBtn}
         </button>
         <button className="tb-btn" onClick={reset}>
-          reset
+          {t.toolbar.reset}
         </button>
+      </div>
+
+      <div className="tb-group">
+        <label className="tb-label">{t.language}</label>
+        <select className="tb-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t.language}>
+          {LANGS.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   )
