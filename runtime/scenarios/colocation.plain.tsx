@@ -1,0 +1,83 @@
+import { useState } from 'react'
+
+interface Todo {
+  id: string
+  text: string
+  done: boolean
+}
+
+const INITIAL: Todo[] = [
+  { id: 't1', text: 'Change the filter', done: true },
+  { id: 't2', text: 'Watch the whole app flash', done: false },
+  { id: 't3', text: 'Only the list actually cares', done: false },
+]
+
+const FILTERS = ['all', 'active', 'done'] as const
+type Filter = (typeof FILTERS)[number]
+
+const Header = () => (
+  <header className="app-header">
+    <h1>To-dos</h1>
+  </header>
+)
+
+const Branding = () => <p className="branding">real React · instrumented</p>
+
+const Toolbar = ({ onAdd }: { onAdd: () => void }) => (
+  <div className="toolbar">
+    <button className="primary" onClick={onAdd}>
+      + Add to-do
+    </button>
+  </div>
+)
+
+const Filters = ({ filter, onSet }: { filter: Filter; onSet: (f: Filter) => void }) => (
+  <div className="filters">
+    {FILTERS.map((f) => (
+      <button key={f} className={f === filter ? 'chip active' : 'chip'} onClick={() => onSet(f)}>
+        {f}
+      </button>
+    ))}
+  </div>
+)
+
+const Footer = ({ count }: { count: number }) => <p className="footer">{count} to-dos total</p>
+
+const TodoItem = ({ todo }: { todo: Todo }) => (
+  <li className="todo">
+    <label>
+      <input type="checkbox" checked={todo.done} readOnly />
+      <span className={todo.done ? 'done' : ''}>{todo.text}</span>
+    </label>
+  </li>
+)
+
+const TodoList = ({ todos }: { todos: Todo[] }) => (
+  <ul className="todo-list">
+    {todos.map((t) => (
+      <TodoItem key={t.id} todo={t} />
+    ))}
+  </ul>
+)
+
+export const App = () => {
+  const [todos, setTodos] = useState<Todo[]>(INITIAL)
+  // The filter lives at the very top, so every filter change re-renders the entire
+  // app — Header, Branding, Toolbar and Footer all flash, even though none of them
+  // read the filter. State placement sets the blast radius.
+  const [filter, setFilter] = useState<Filter>('all')
+
+  const add = () => setTodos((ts) => [...ts, { id: `t${ts.length + 1}`, text: `New task ${ts.length + 1}`, done: false }])
+  const visible = todos.filter((t) => (filter === 'all' ? true : filter === 'done' ? t.done : !t.done))
+
+  return (
+    <div className="app">
+      <Header />
+      <Branding />
+      <Toolbar onAdd={add} />
+      <Filters filter={filter} onSet={setFilter} />
+      <TodoList todos={visible} />
+      <Footer count={todos.length} />
+    </div>
+  )
+}

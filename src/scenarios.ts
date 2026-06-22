@@ -6,6 +6,10 @@ import contextPitfallSource from '../runtime/scenarios/context-pitfall.plain.tsx
 import contextPitfallMemoSource from '../runtime/scenarios/context-pitfall.memo.plain.tsx?raw'
 import compositionSource from '../runtime/scenarios/composition.plain.tsx?raw'
 import compositionLiftSource from '../runtime/scenarios/composition.lift.plain.tsx?raw'
+import identitySource from '../runtime/scenarios/identity.plain.tsx?raw'
+import identityCallbackSource from '../runtime/scenarios/identity.callback.plain.tsx?raw'
+import colocationSource from '../runtime/scenarios/colocation.plain.tsx?raw'
+import colocationPushSource from '../runtime/scenarios/colocation.push.plain.tsx?raw'
 
 export interface Variant {
   id: string
@@ -71,6 +75,30 @@ export const SCENARIOS: Scenario[] = [
     ],
     source: compositionSource,
     variants: [{ id: 'lift', label: 'Lift content up', source: compositionLiftSource }],
+  },
+  {
+    id: 'identity',
+    label: '5 · memo & referential identity',
+    blurb:
+      'memo only bails when its props are referentially equal — an inline handler is a new function every render, so memo can’t help.',
+    experiments: [
+      'Every child is wrapped in React.memo, yet flip the theme and the whole tree still flashes — the handlers are new each render.',
+      'Switch on "Stable handlers", then flip the theme again — the list bails because useCallback kept the same function identity.',
+    ],
+    source: identitySource,
+    variants: [{ id: 'callback', label: 'Stable handlers', source: identityCallbackSource }],
+  },
+  {
+    id: 'colocation',
+    label: '6 · Where state lives',
+    blurb:
+      'State placement sets the blast radius: a filter held at the top re-renders the whole app, even the parts that never read it.',
+    experiments: [
+      'Click a filter chip — Header, Toolbar and Footer all flash, though only the list cares about the filter.',
+      'Switch on "Push state down", then filter again — only the list subtree re-renders. No memo required, just better placement.',
+    ],
+    source: colocationSource,
+    variants: [{ id: 'push', label: 'Push state down', source: colocationPushSource }],
   },
 ]
 
